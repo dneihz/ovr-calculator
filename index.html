@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Tính OVR Cầu Thủ</title>
+  <style>
+    :root {
+      --primary: #1a237e;
+      --accent: #c62828;
+      --bg: #f5f5f5;
+      --card: #ffffff;
+      --text: #212121;
+      --border: #e0e0e0;
+      --input-bg: #f0f0f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-tap-highlight-color: transparent;
+    }
+    *::-webkit-scrollbar { display: none; }
+    * { scrollbar-width: none; -ms-overflow-style: none; }
+
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 14px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    header h1 { font-size: 1.1rem; font-weight: 600; }
+    .btn {
+      border: none;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-accent { background: var(--accent); color: white; width: 100%; padding: 14px; font-size: 1rem; }
+    .btn-outline { background: transparent; color: white; border: 1px solid rgba(255,255,255,0.4); }
+
+    .container {
+      height: calc(100% - 56px);
+      overflow-y: auto;
+      padding: 12px;
+      max-width: 640px;
+      margin: 0 auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .url-box {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .url-box input {
+      flex: 1;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: white;
+      color: var(--text);
+      font-size: 0.95rem;
+    }
+
+    .attr-list, .weight-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .attr-card, .weight-item {
+      display: flex;
+      align-items: center;
+      background: var(--card);
+      border-radius: 10px;
+      padding: 10px 12px;
+      gap: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .attr-card label, .weight-item .stat-name {
+      flex: 1;
+      font-size: 0.95rem;
+      font-weight: 500;
+    }
+    .attr-card input, .weight-item input {
+      width: 68px;
+      text-align: center;
+      padding: 8px 4px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--input-bg);
+      color: var(--text);
+      font-size: 1rem;
+      font-weight: 600;
+    }
+    .weight-item .weight {
+      min-width: 42px;
+      text-align: center;
+      font-weight: 700;
+      color: var(--primary);
+      font-size: 0.95rem;
+    }
+
+    .pos-buttons {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .pos-buttons button {
+      padding: 9px 4px;
+      font-size: 0.78rem;
+      background: white;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-weight: 500;
+    }
+    .pos-buttons button.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .calc-box {
+      background: white;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .calc-box h3 {
+      font-size: 0.95rem;
+      margin-bottom: 6px;
+      color: var(--primary);
+    }
+    .calc-box p {
+      font-size: 0.85rem;
+      color: #666;
+      margin-bottom: 12px;
+    }
+    .result-box {
+      margin-top: 12px;
+      padding: 12px;
+      background: #e8f5e9;
+      border-radius: 10px;
+      text-align: center;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #2e7d32;
+      display: none;
+    }
+
+    .result-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 9px 0;
+      border-bottom: 1px solid #eee;
+      font-size: 1.05rem;
+    }
+    .result-item span:last-child { font-weight: 700; color: #2e7d32; }
+
+    .hidden { display: none !important; }
+
+    .dialog-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.45);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100;
+      padding: 16px;
+    }
+    .dialog {
+      background: white;
+      border-radius: 14px;
+      padding: 20px;
+      width: 100%;
+      max-width: 380px;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+    }
+    .dialog h2 { margin-bottom: 14px; font-size: 1.15rem; }
+    .dialog-actions { margin-top: 18px; text-align: right; }
+  </style>
+</head>
+<body>
+  <!-- Màn hình chính -->
+  <div id="screen-ovr" style="height:100%; display:flex; flex-direction:column;">
+    <header>
+      <h1>Tính OVR Cầu Thủ</h1>
+      <button class="btn btn-outline" onclick="showWeights()">Hệ số</button>
+    </header>
+    <div class="container">
+      <div class="url-box">
+        <input type="text" id="urlInput" placeholder="Dán URL cầu thủ...">
+        <button class="btn btn-primary" onclick="fetchData()">Lấy dữ liệu</button>
+      </div>
+      <div class="attr-list" id="attrList"></div>
+      <button class="btn btn-accent" onclick="calculateOVR()">TÍNH CHỈ SỐ OVR</button>
+    </div>
+  </div>
+
+  <!-- Màn hình hệ số + tính theo vị trí -->
+  <div id="screen-weights" class="hidden" style="height:100%; display:flex; flex-direction:column;">
+    <header>
+      <button class="btn btn-outline" onclick="showOVR()">← Quay lại</button>
+      <h1>Hệ số & Tính OVR</h1>
+      <div style="width:60px"></div>
+    </header>
+    <div class="container">
+      <div class="pos-buttons" id="posButtons"></div>
+
+      <div class="calc-box">
+        <h3>Tính OVR theo vị trí</h3>
+        <p>Chỉ cần nhập những chỉ số thuộc vị trí đang chọn bên dưới → bấm tính.</p>
+        <button class="btn btn-accent" onclick="calcSinglePosition()">Tính OVR vị trí này</button>
+        <div class="result-box" id="singleResult"></div>
+      </div>
+
+      <div class="weight-list" id="weightList"></div>
+    </div>
+  </div>
+
+  <script>
+    // ===== Hệ số vị trí (không cho sửa) =====
+    const POSITION_WEIGHTS = {
+      "LS/ST/RS": {
+        "Dứt điểm": 18, "Chọn vị trí": 13, "Giữ bóng": 10, "Lực sút": 10, "Đánh đầu": 10,
+        "Phản ứng": 8, "Rê bóng": 7, "Sức mạnh": 5, "Tốc độ": 5, "Chuyền ngắn": 5,
+        "Tăng tốc": 4, "Sút xa": 3, "Vô lê": 2
+      },
+      "RW/LW": {
+        "Rê bóng": 16, "Giữ bóng": 14, "Dứt điểm": 10, "Chọn vị trí": 9, "Chuyền ngắn": 9,
+        "Tạt bóng": 9, "Phản ứng": 7, "Tăng tốc": 7, "Tầm nhìn": 6, "Tốc độ": 6,
+        "Sút xa": 4, "Khéo léo": 3
+      },
+      "LF/CF/RF": {
+        "Giữ bóng": 15, "Rê bóng": 14, "Chọn vị trí": 13, "Dứt điểm": 11, "Phản ứng": 9,
+        "Chuyền ngắn": 9, "Tầm nhìn": 8, "Lực sút": 5, "Tốc độ": 5, "Tăng tốc": 5,
+        "Sút xa": 4, "Đánh đầu": 2
+      },
+      "LAM/CAM/RAM": {
+        "Chuyền ngắn": 16, "Giữ bóng": 15, "Tầm nhìn": 14, "Rê bóng": 13, "Chọn vị trí": 9,
+        "Phản ứng": 7, "Dứt điểm": 7, "Sút xa": 5, "Tăng tốc": 4, "Chuyền dài": 4,
+        "Tốc độ": 3, "Khéo léo": 3
+      },
+      "RM/LM": {
+        "Rê bóng": 15, "Giữ bóng": 13, "Chuyền ngắn": 11, "Tạt bóng": 10, "Chọn vị trí": 8,
+        "Phản ứng": 7, "Tăng tốc": 7, "Tầm nhìn": 7, "Dứt điểm": 6, "Tốc độ": 6,
+        "Thể lực": 5, "Chuyền dài": 5
+      },
+      "LCM/CM/RCM": {
+        "Chuyền ngắn": 17, "Giữ bóng": 14, "Tầm nhìn": 13, "Chuyền dài": 13, "Phản ứng": 8,
+        "Rê bóng": 7, "Chọn vị trí": 6, "Thể lực": 6, "Lấy bóng": 5, "Cắt bóng": 5,
+        "Sút xa": 4, "Dứt điểm": 2
+      },
+      "LDM/CDM/RDM": {
+        "Chuyền ngắn": 14, "Cắt bóng": 14, "Lấy bóng": 12, "Giữ bóng": 10, "Chuyền dài": 10,
+        "Kèm người": 9, "Phản ứng": 7, "Thể lực": 6, "Xoạc bóng": 5, "Quyết đoán": 5,
+        "Tầm nhìn": 4, "Sức mạnh": 4
+      },
+      "LWB/RWB": {
+        "Cắt bóng": 12, "Tạt bóng": 12, "Xoạc bóng": 11, "Chuyền ngắn": 10, "Thể lực": 10,
+        "Lấy bóng": 8, "Giữ bóng": 8, "Phản ứng": 8, "Kèm người": 7, "Tốc độ": 6,
+        "Rê bóng": 4, "Tăng Tốc": 4
+      },
+      "LB/RB": {
+        "Xoạc bóng": 14, "Cắt bóng": 12, "Lấy bóng": 11, "Tạt bóng": 9, "Thể lực": 8,
+        "Phản ứng": 8, "Kèm người": 8, "Chuyền ngắn": 7, "Giữ bóng": 7, "Tốc độ": 7,
+        "Tăng Tốc": 5, "Đánh đầu": 4
+      },
+      "CB": {
+        "Lấy bóng": 17, "Kèm người": 14, "Cắt bóng": 13, "Xoạc bóng": 10, "Đánh đầu": 10,
+        "Sức mạnh": 10, "Quyết đoán": 7, "Phản ứng": 5, "Chuyền ngắn": 5, "Giữ bóng": 4,
+        "Nhảy": 3, "Tốc độ": 2
+      },
+      "GK": {
+        "TM đổ người": 21, "TM bắt bóng": 21, "TM chọn vị trí": 21, "TM phản xạ": 21,
+        "Phản ứng": 11, "TM phát bóng": 5
+      }
+    };
+
+    let currentPos = "LS/ST/RS";
+    let entries = [];          // từ màn hình chính (URL)
+    let posInputs = {};        // input chỉ số theo vị trí
+
+    // ===== Fetch dữ liệu từ URL =====
+    async function fetchData() {
+      const url = document.getElementById('urlInput').value.trim();
+      if (!url) {
+        showDialog("Cảnh báo", "Vui lòng nhập đường link cầu thủ!");
+        return;
+      }
+
+      try {
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+        const res = await fetch(proxyUrl);
+        const html = await res.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const items = doc.querySelectorAll('.attr-item');
+
+        const list = document.getElementById('attrList');
+        list.innerHTML = '';
+        entries = [];
+
+        items.forEach(item => {
+          const titleEl = item.querySelector('.text-shadow');
+          const valEl = item.querySelector('.val');
+          if (!titleEl || !valEl) return;
+
+          const title = titleEl.textContent.trim();
+          let value = parseInt(valEl.textContent.trim()) || 0;
+          value += 3;
+
+          const card = document.createElement('div');
+          card.className = 'attr-card';
+          card.innerHTML = `
+            <label>${title}</label>
+            <input type="number" value="${value}">
+          `;
+          list.appendChild(card);
+          entries.push(card.querySelector('input'));
+        });
+
+        if (entries.length === 0) {
+          showDialog("Thông báo", "Không tìm thấy chỉ số nào trên trang này.");
+        }
+      } catch (e) {
+        showDialog("Lỗi", "Không thể lấy dữ liệu:\n" + e.message);
+      }
+    }
+
+    // ===== Tính OVR đầy đủ (công thức gốc) =====
+    function calculateOVR() {
+      if (entries.length < 34) {
+        showDialog("Lỗi", "Chưa có đủ dữ liệu chỉ số (cần ít nhất 34 chỉ số).");
+        return;
+      }
+
+      let cs;
+      try {
+        cs = entries.map(e => parseFloat(e.value) || 0);
+      } catch {
+        showDialog("Lỗi", "Chỉ số phải là số.");
+        return;
+      }
+
+      const ST  = (18*cs[2] + 13*cs[5] + 10*(cs[15]+cs[3]+cs[22]) + 8*cs[18] + 7*cs[14] + 5*(cs[24]+cs[0]+cs[8]) + 4*cs[1] + 3*cs[4] + 2*cs[6]) / 100;
+      const CF  = (15*cs[15] + 14*cs[14] + 13*cs[5] + 11*cs[2] + 9*(cs[18]+cs[8]) + 8*cs[9] + 5*(cs[3]+cs[0]+cs[1]) + 4*cs[4] + 2*cs[22]) / 100;
+      const LW  = (16*cs[14] + 14*cs[15] + 10*cs[2] + 9*(cs[5]+cs[8]+cs[10]) + 7*(cs[18]+cs[1]) + 6*(cs[9]+cs[0]) + 4*cs[4] + 3*cs[16]) / 100;
+      const CAM = (16*cs[8] + 15*cs[15] + 14*cs[9] + 13*cs[14] + 9*cs[5] + 7*(cs[18]+cs[2]) + 5*cs[4] + 4*(cs[1]+cs[11]) + 3*(cs[0]+cs[16])) / 100;
+      const LM  = (15*cs[14] + 13*cs[15] + 11*cs[8] + 10*cs[10] + 8*cs[5] + 7*cs[18] + 7*cs[1] + 7*cs[9] + 6*cs[2] + 6*cs[0] + 5*cs[25] + 5*cs[11]) / 100;
+      const CM  = (17*cs[8] + 14*cs[15] + 13*(cs[9]+cs[11]) + 8*cs[18] + 7*cs[14] + 6*(cs[5]+cs[25]) + 5*(cs[20]+cs[21]) + 4*cs[4] + 2*cs[2]) / 100;
+      const CDM = (14*(cs[8]+cs[21]) + 12*cs[20] + 10*(cs[15]+cs[11]) + 9*cs[19] + 7*cs[18] + 6*cs[25] + 5*(cs[23]+cs[26]) + 4*(cs[9]+cs[24])) / 100;
+      const CB  = (17*cs[20] + 14*cs[19] + 13*cs[21] + 10*cs[23] + 10*cs[22] + 10*cs[24] + 7*cs[26] + 5*cs[18] + 5*cs[8] + 4*cs[15] + 3*cs[27] + 2*cs[0]) / 100;
+      const LB  = (14*cs[23] + 12*cs[21] + 11*cs[20] + 9*cs[10] + 8*(cs[25]+cs[18]+cs[19]) + 7*(cs[8]+cs[15]+cs[0]) + 5*cs[1] + 4*cs[22]) / 100;
+      const LWB = (12*(cs[21]+cs[10]) + 11*cs[23] + 10*(cs[8]+cs[25]) + 8*(cs[20]+cs[15]+cs[18]) + 7*cs[19] + 6*cs[0] + 4*(cs[14]+cs[1])) / 100;
+      const GK  = (cs[29]*21 + cs[30]*21 + cs[33]*21 + cs[32]*21 + cs[18]*11 + cs[31]*5) / 100;
+
+      const positions = [
+        ["ST", ST], ["CF", CF], ["LW/RW", LW], ["CAM", CAM],
+        ["LM/RM", LM], ["CM", CM], ["CDM", CDM], ["CB", CB],
+        ["LB/RB", LB], ["LWB/RWB", LWB], ["GK", GK]
+      ];
+
+      let html = '';
+      positions.forEach(([name, val]) => {
+        html += `<div class="result-item"><span>${name}</span><span>${Math.floor(val)} (${val.toFixed(2)})</span></div>`;
+      });
+      showDialog("Kết quả OVR", html, true);
+    }
+
+    // ===== Tính OVR theo 1 vị trí (chỉ nhập chỉ số của vị trí đó) =====
+    function calcSinglePosition() {
+      const weights = POSITION_WEIGHTS[currentPos] || {};
+      let total = 0;
+      let missing = [];
+
+      for (const [stat, w] of Object.entries(weights)) {
+        const input = posInputs[stat];
+        if (!input) continue;
+        const val = parseFloat(input.value);
+        if (isNaN(val)) {
+          missing.push(stat);
+        } else {
+          total += w * val;
+        }
+      }
+
+      if (missing.length > 0) {
+        showDialog("Thiếu dữ liệu", "Bạn chưa nhập đủ chỉ số:\n" + missing.join(", "));
+        return;
+      }
+
+      const ovr = total / 100;
+      const box = document.getElementById('singleResult');
+      box.style.display = 'block';
+      box.innerHTML = `${currentPos}: <span style="font-size:1.4rem">${Math.floor(ovr)}</span> (${ovr.toFixed(2)})`;
+    }
+
+    // ===== Màn hình hệ số =====
+    function showWeights() {
+      document.getElementById('screen-ovr').classList.add('hidden');
+      document.getElementById('screen-weights').classList.remove('hidden');
+      renderPosButtons();
+      showWeightList(currentPos);
+    }
+    function showOVR() {
+      document.getElementById('screen-weights').classList.add('hidden');
+      document.getElementById('screen-ovr').classList.remove('hidden');
+    }
+
+    function renderPosButtons() {
+      const box = document.getElementById('posButtons');
+      box.innerHTML = '';
+      Object.keys(POSITION_WEIGHTS).forEach(pos => {
+        const btn = document.createElement('button');
+        btn.textContent = pos;
+        if (pos === currentPos) btn.classList.add('active');
+        btn.onclick = () => {
+          document.querySelectorAll('.pos-buttons button').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          currentPos = pos;
+          showWeightList(pos);
+          document.getElementById('singleResult').style.display = 'none';
+        };
+        box.appendChild(btn);
+      });
+    }
+
+    function showWeightList(pos) {
+      const list = document.getElementById('weightList');
+      list.innerHTML = '';
+      posInputs = {};
+      const weights = POSITION_WEIGHTS[pos] || {};
+
+      for (const [stat, w] of Object.entries(weights)) {
+        const div = document.createElement('div');
+        div.className = 'weight-item';
+        div.innerHTML = `
+          <span class="stat-name">${stat}</span>
+          <span class="weight">${w}</span>
+          <input type="number" placeholder="0" min="0" max="120">
+        `;
+        list.appendChild(div);
+        posInputs[stat] = div.querySelector('input');
+      }
+    }
+
+    // ===== Dialog =====
+    function showDialog(title, content, isHtml = false) {
+      const overlay = document.createElement('div');
+      overlay.className = 'dialog-overlay';
+      overlay.innerHTML = `
+        <div class="dialog">
+          <h2>${title}</h2>
+          <div>${isHtml ? content : content.replace(/\n/g, '<br>')}</div>
+          <div class="dialog-actions">
+            <button class="btn btn-primary" onclick="this.closest('.dialog-overlay').remove()">ĐÓNG</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+    }
+  </script>
+</body>
+</html>
